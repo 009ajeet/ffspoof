@@ -357,16 +357,49 @@
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 20px;
-            text-align: center;
         }
 
-        /* New grid verification styles */
+        .captcha-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .captcha-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #00d9ff;
+            border-radius: 2px;
+            margin-right: 10px;
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            background-color: rgba(0, 217, 255, 0.1);
+        }
+
+        .captcha-checkbox.checked::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00d9ff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .captcha-text {
+            font-size: 16px;
+            color: #fff;
+        }
+
         .captcha-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
             gap: 8px;
             margin-top: 15px;
+            display: none;
         }
 
         .captcha-cell {
@@ -410,6 +443,7 @@
             border-radius: 5px;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+            display: none;
         }
 
         .captcha-target {
@@ -428,6 +462,7 @@
 
         .verify-button {
             background: linear-gradient(45deg, #08d9d6, #00adb5);
+            display: none;
         }
 
         .refresh-captcha {
@@ -439,6 +474,7 @@
             margin-top: 10px;
             box-shadow: none;
             transition: all 0.3s ease;
+            display: none;
         }
 
         .refresh-captcha:hover {
@@ -506,7 +542,7 @@
         </div>
     </div>
 
-    <!-- Human Verification Modal with 3x3 Grid -->
+    <!-- Human Verification Modal with two-step verification -->
     <div id="verification-modal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
@@ -516,7 +552,12 @@
                 <p>Please complete the verification to receive your diamonds.</p>
 
                 <div class="captcha-container">
-                    <div class="captcha-challenge">
+                    <div class="captcha-title">
+                        <div class="captcha-checkbox" id="captchaCheckbox"></div>
+                        <div class="captcha-text">I'm not a robot</div>
+                    </div>
+
+                    <div class="captcha-challenge" id="captcha-challenge">
                         <p class="captcha-instructions">Select all squares that contain:</p>
                         <p class="captcha-target" id="captcha-target">Fire Hydrants</p>
                     </div>
@@ -572,16 +613,9 @@
                 cell.className = 'captcha-cell';
                 cell.dataset.index = i;
 
-                // Random image dimensions (all square but varying sizes for the placeholder)
-                const size = 100 + Math.floor(Math.random() * 50);
-
                 // Create the image with random parameters to get different placeholder images
                 const img = document.createElement('img');
                 img.src = `https://picsum.photos/300/300?random=${Math.random()}`;
-
-
-                // If the image fails to load, fallback to a completely random one
-
                 img.alt = `Verification image ${i + 1}`;
 
                 cell.appendChild(img);
@@ -593,6 +627,30 @@
                 });
             }
         }
+
+        // Captcha checkbox functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const captchaCheckbox = document.getElementById('captchaCheckbox');
+            const captchaChallenge = document.getElementById('captcha-challenge');
+            const captchaGrid = document.getElementById('captcha-grid');
+            const refreshCaptcha = document.getElementById('refresh-captcha');
+            const verifyButton = document.getElementById('verify-button');
+
+            captchaCheckbox.addEventListener('click', function () {
+                this.classList.add('checked');
+
+                // Show the image challenge after a short delay
+                setTimeout(() => {
+                    captchaChallenge.style.display = 'block';
+                    captchaGrid.style.display = 'grid';
+                    refreshCaptcha.style.display = 'inline-block';
+                    verifyButton.style.display = 'block';
+
+                    // Generate the grid images
+                    generateCaptchaGrid();
+                }, 500);
+            });
+        });
 
         // Refresh captcha button
         document.getElementById('refresh-captcha').addEventListener('click', function () {
@@ -616,9 +674,6 @@
             setTimeout(() => {
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
-
-                // Generate captcha grid
-                generateCaptchaGrid();
 
                 // Show verification modal
                 document.getElementById('verification-modal').style.display = 'flex';
