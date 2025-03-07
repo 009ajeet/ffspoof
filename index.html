@@ -310,13 +310,171 @@
             margin-top: 10px;
             color: #00d9ff;
         }
+
+        /* Verification modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal {
+            background-color: #16213e;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #00d9ff;
+            margin: 0;
+        }
+
+        .modal-content {
+            margin-bottom: 20px;
+        }
+
+        .captcha-container {
+            background-color: rgba(15, 52, 96, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* New grid verification styles */
+        .captcha-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .captcha-cell {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .captcha-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+
+        .captcha-cell.selected::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(8, 217, 214, 0.4);
+            border: 3px solid #08d9d6;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .captcha-cell.selected img {
+            transform: scale(1.05);
+        }
+
+        .captcha-challenge {
+            color: #fff;
+            background-color: rgba(10, 35, 66, 0.9);
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+
+        .captcha-target {
+            color: #ff9d00;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 157, 0, 0.5);
+            margin: 5px 0;
+        }
+
+        .captcha-instructions {
+            color: #ccc;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .verify-button {
+            background: linear-gradient(45deg, #08d9d6, #00adb5);
+        }
+
+        .refresh-captcha {
+            background: none;
+            border: 2px solid #00d9ff;
+            color: #00d9ff;
+            font-size: 14px;
+            padding: 8px 15px;
+            margin-top: 10px;
+            box-shadow: none;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-captcha:hover {
+            background: rgba(0, 217, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .refresh-hint {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .refresh-key {
+            display: inline-block;
+            background-color: #ff2e63;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin: 0 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <div class="logo">
-            <img src="/api/placeholder/150/150" alt="Free Fire Logo">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdLyju5n6CvegGXf9-QuYNQfKb_h4oSZsKbw&s"
+                alt="Free Fire Logo">
         </div>
         <h1>Free Fire Diamond Claim</h1>
 
@@ -348,7 +506,99 @@
         </div>
     </div>
 
+    <!-- Human Verification Modal with 3x3 Grid -->
+    <div id="verification-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Human Verification Required</h2>
+            </div>
+            <div class="modal-content">
+                <p>Please complete the verification to receive your diamonds.</p>
+
+                <div class="captcha-container">
+                    <div class="captcha-challenge">
+                        <p class="captcha-instructions">Select all squares that contain:</p>
+                        <p class="captcha-target" id="captcha-target">Fire Hydrants</p>
+                    </div>
+
+                    <div class="captcha-grid" id="captcha-grid">
+                        <!-- Grid cells will be generated by JavaScript -->
+                    </div>
+
+                    <button class="refresh-captcha" id="refresh-captcha">New Challenge</button>
+                </div>
+            </div>
+            <button id="verify-button" class="verify-button">Verify Now</button>
+        </div>
+    </div>
+
+    <div class="refresh-hint">
+        Press <span class="refresh-key">R</span> to refresh
+    </div>
+
     <script>
+        // Listen for 'R' key press to refresh the page
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'r' || event.key === 'R') {
+                location.reload();
+            }
+        });
+
+        // Array of captcha challenges
+        const captchaChallenges = [
+            "Fire Hydrants",
+            "Cars",
+            "Traffic Lights",
+            "Bicycles",
+            "Buses",
+            "Crosswalks",
+            "Mountains",
+            "Palm Trees",
+            "Storefronts"
+        ];
+
+        // Generate random image placeholders for the grid
+        function generateCaptchaGrid() {
+            const grid = document.getElementById('captcha-grid');
+            grid.innerHTML = '';
+
+            // Set a random challenge
+            const randomChallenge = captchaChallenges[Math.floor(Math.random() * captchaChallenges.length)];
+            document.getElementById('captcha-target').textContent = randomChallenge;
+
+            // Generate 9 grid cells with random images
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'captcha-cell';
+                cell.dataset.index = i;
+
+                // Random image dimensions (all square but varying sizes for the placeholder)
+                const size = 100 + Math.floor(Math.random() * 50);
+
+                // Create the image with random parameters to get different placeholder images
+                const img = document.createElement('img');
+                img.src = `https://picsum.photos/300/300?random=${Math.random()}`;
+
+
+                // If the image fails to load, fallback to a completely random one
+
+                img.alt = `Verification image ${i + 1}`;
+
+                cell.appendChild(img);
+                grid.appendChild(cell);
+
+                // Add click event to toggle selection
+                cell.addEventListener('click', function () {
+                    this.classList.toggle('selected');
+                });
+            }
+        }
+
+        // Refresh captcha button
+        document.getElementById('refresh-captcha').addEventListener('click', function () {
+            generateCaptchaGrid();
+        });
+
         function submitForm() {
             const diamonds = document.getElementById('diamonds').value;
             const gameId = document.getElementById('game-id').value;
@@ -367,6 +617,38 @@
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
 
+                // Generate captcha grid
+                generateCaptchaGrid();
+
+                // Show verification modal
+                document.getElementById('verification-modal').style.display = 'flex';
+
+                // Store values for later use
+                window.diamondValue = diamonds;
+                window.gameIdValue = gameId;
+            }, 1500);
+        }
+
+        // Verification button event
+        document.getElementById('verify-button').addEventListener('click', function () {
+            // Check if at least one cell is selected (to simulate verification)
+            const selectedCells = document.querySelectorAll('.captcha-cell.selected');
+            if (selectedCells.length === 0) {
+                alert('Please select at least one image to complete verification');
+                return;
+            }
+
+            // Hide verification modal
+            document.getElementById('verification-modal').style.display = 'none';
+
+            // Show loading again briefly
+            document.getElementById('loading').style.display = 'block';
+
+            // Simulate verification processing
+            setTimeout(() => {
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+
                 // Display result
                 const resultElement = document.getElementById('result');
                 resultElement.style.display = 'block';
@@ -374,19 +656,19 @@
                     resultElement.classList.add('show');
                 }, 100);
 
-                document.getElementById('diamond-count').textContent = diamonds;
-                document.getElementById('user-game-id').textContent = gameId;
+                document.getElementById('diamond-count').textContent = window.diamondValue;
+                document.getElementById('user-game-id').textContent = window.gameIdValue;
 
                 // Create confetti
                 createConfetti();
-            }, 2000);
-        }
+            }, 1000);
+        });
 
         function createConfetti() {
             const colors = ['#ff2e63', '#00d9ff', '#ff9d00', '#08d9d6', '#fff'];
             const shapes = ['circle', 'square', 'triangle'];
 
-            for (let i = 0; i < a30; i++) {
+            for (let i = 0; i < 30; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
