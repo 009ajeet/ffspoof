@@ -582,6 +582,9 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === 'r' || event.key === 'R') {
                 location.reload();
+                event.preventDefault(); // Prevent the default browser reload
+                document.getElementById('diamonds').value = ''; // Clear diamonds input
+                document.getElementById('game-id').value = ''; // Clear game ID input
             }
         });
 
